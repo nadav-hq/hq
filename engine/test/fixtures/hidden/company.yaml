@@ -1,0 +1,6 @@
+# Test fixture shaped like nadav-hq/hidden (the real repo gets its cards in M5).
+id: hidden
+name: Hidden Library
+format: solo
+telegram_topic_id: null
+budget_month_usd: 20
