@@ -3,6 +3,7 @@
 // Real companies are created by the loader from their company.yaml (`pnpm cards:sync <dir>`),
 // which also makes the HQ owners their owners. All values come from env. Safe to re-run.
 import pg from "pg";
+import { poolConfig } from "../engine/src/db/pool.ts";
 import { loadDotEnv, requireEnv } from "./_env.ts";
 
 loadDotEnv();
@@ -11,7 +12,7 @@ const ownerTg = process.env.OWNER_TELEGRAM_USER_ID || null;
 const hqBudget = Number(requireEnv("HQ_BUDGET_MONTH_USD"));
 if (!Number.isFinite(hqBudget) || hqBudget < 0) throw new Error("HQ_BUDGET_MONTH_USD must be a non-negative number");
 
-const client = new pg.Client({ connectionString: requireEnv("SUPABASE_DB_URL") });
+const client = new pg.Client(poolConfig(requireEnv("SUPABASE_DB_URL")));
 await client.connect();
 try {
   await client.query("begin");

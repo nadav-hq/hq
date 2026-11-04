@@ -6,8 +6,20 @@ export function databaseUrl(): string {
   return url;
 }
 
-export function createPool(url = databaseUrl()): pg.Pool {
-  return new pg.Pool({ connectionString: url, max: 5 });
+/**
+ * Pool for the engine. If SUPABASE_CA_CERT (PEM text of Supabase's root certificate) is set, TLS is
+ * verified against it; any sslmode in the URL is then ignored so the CA setting wins.
+ */
+export function createPool(url = databaseUrl(), max = 5): pg.Pool {
+  return new pg.Pool(poolConfig(url, max));
+}
+
+export function poolConfig(url: string, max = 5): pg.PoolConfig {
+  const ca = process.env.SUPABASE_CA_CERT?.replace(/\\n/g, "\n");
+  if (!ca) return { connectionString: url, max };
+  const u = new URL(url);
+  for (const k of ["sslmode", "sslrootcert", "uselibpqcompat"]) u.searchParams.delete(k);
+  return { connectionString: u.toString(), max, ssl: { ca, rejectUnauthorized: true } };
 }
 
 /**

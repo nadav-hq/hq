@@ -38,7 +38,7 @@ describe("loadCompanyDir", () => {
     expect(r.companyIssues).toEqual([]);
     expect(r.invalid).toEqual([]);
     expect(r.company?.id).toBe("hidden");
-    expect(r.cards.map((c) => c.id)).toEqual(["hidden.manager", "hidden.seo"]);
+    expect(r.cards.map((c) => c.id)).toEqual(["hidden.manager", "hidden.seo", "hidden.test"]);
     for (const c of r.cards) expect(c.version).toMatch(/^([0-9a-f]{40}|local-[0-9a-f]{12})$/);
   });
 

@@ -44,13 +44,13 @@ describe.skipIf(!TEST_DB_URL)("loader sync + export-company", () => {
     await git("commit", "-qm", "cards");
 
     const first = await syncAgents(pool, await loadCompanyDir(dir));
-    expect(first.inserted).toEqual(["hidden.manager", "hidden.seo"]);
+    expect(first.inserted).toEqual(["hidden.manager", "hidden.seo", "hidden.test"]);
     const { rows } = await pool.query("select id, state, card_version from hq.agents where company_id = 'hidden' order by id");
-    expect(rows.map((r) => r.state)).toEqual(["draft", "shadow"]);
+    expect(rows.map((r) => r.state)).toEqual(["draft", "shadow", "shadow"]);
     expect(rows[0].card_version).toMatch(/^[0-9a-f]{40}$/);
 
     const again = await syncAgents(pool, await loadCompanyDir(dir));
-    expect(again.unchanged).toEqual(["hidden.manager", "hidden.seo"]);
+    expect(again.unchanged).toEqual(["hidden.manager", "hidden.seo", "hidden.test"]);
 
     // Nadav turns seo on; then the card changes in a new commit.
     await pool.query("update hq.agents set state = 'active' where id = 'hidden.seo'");
@@ -58,7 +58,7 @@ describe.skipIf(!TEST_DB_URL)("loader sync + export-company", () => {
     await git("commit", "-qam", "edit seo");
     const third = await syncAgents(pool, await loadCompanyDir(dir));
     expect(third.updated).toEqual(["hidden.seo"]);
-    expect(third.unchanged).toEqual(["hidden.manager"]);
+    expect(third.unchanged).toEqual(["hidden.manager", "hidden.test"]);
     const seo = (await pool.query("select state, card_version from hq.agents where id = 'hidden.seo'")).rows[0];
     expect(seo.state).toBe("active");
     expect(seo.card_version).not.toBe(rows[1].card_version);
@@ -179,7 +179,7 @@ describe.skipIf(!TEST_DB_URL)("loader sync + export-company", () => {
     try {
       const q = async (s: string) => (await t.query(s)).rows;
       expect(await q("select id, format, budget_month_usd::float b from hq.companies")).toEqual([{ id: "hidden", format: "solo", b: 20 }]);
-      expect((await q("select id from hq.agents order by id")).map((r) => r.id)).toEqual(["hidden.manager", "hidden.seo"]);
+      expect((await q("select id from hq.agents order by id")).map((r) => r.id)).toEqual(["hidden.manager", "hidden.seo", "hidden.test"]);
       expect(await q("select count(*)::int n from hq.tasks")).toEqual([{ n: 2 }]);
       expect(await q("select note from hq.memory")).toEqual([{ note: "remember" }]);
       expect(await q("select count(*)::int n from hq.runs")).toEqual([{ n: 1 }]);

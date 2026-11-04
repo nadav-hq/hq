@@ -13,16 +13,22 @@
     "db:seed": "tsx scripts/seed.ts",
     "cards:validate": "tsx scripts/validate-cards.ts",
     "cards:sync": "tsx scripts/sync-cards.ts",
-    "export-company": "tsx scripts/export-company.ts"
+    "export-company": "tsx scripts/export-company.ts",
+    "engine:start": "tsx engine/src/main.ts",
+    "run-agent": "tsx scripts/run-agent.ts",
+    "queue:once": "tsx scripts/queue-once.ts",
+    "approvals": "tsx scripts/approvals.ts",
+    "kill-switch": "tsx scripts/kill-switch.ts",
+    "railway:predeploy": "pnpm db:migrate && pnpm db:seed"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
-    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0"
   },
   "dependencies": {
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "tsx": "^4.23.15"
   }
 }

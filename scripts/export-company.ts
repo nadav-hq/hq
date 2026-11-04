@@ -6,6 +6,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import pg from "pg";
 import { exportCompany } from "../engine/src/export/export-company.ts";
+import { poolConfig } from "../engine/src/db/pool.ts";
 import { loadDotEnv, requireEnv } from "./_env.ts";
 
 loadDotEnv();
@@ -17,7 +18,7 @@ if (!id) {
 const out = process.argv[3] ?? `exports/${id}-${new Date().toISOString().replace(/[:.]/g, "-")}.sql`;
 const url = requireEnv("SUPABASE_DB_URL");
 
-const client = new pg.Client({ connectionString: url });
+const client = new pg.Client(poolConfig(url));
 await client.connect();
 try {
   // Repeatable read: all hq rows come from one snapshot.
