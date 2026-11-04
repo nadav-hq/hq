@@ -1,6 +1,14 @@
 -- NADAV HQ core schema (spec §5).
 -- Everything lives in schema `hq`. Per-company working tables live in schema "<company_id>" (created by hq.ensure_company_access, 0003).
 
+-- Requires Postgres 16+: 0002 uses GRANT ... WITH INHERIT/SET options. Supabase project is on 17.
+do $$ begin
+  if current_setting('server_version_num')::int < 160000 then
+    raise exception 'NADAV HQ requires Postgres 16 or newer (this server is %); GRANT ... WITH SET FALSE is not available',
+      current_setting('server_version');
+  end if;
+end $$;
+
 create schema if not exists hq;
 
 -- Nothing in hq is exposed to Supabase's API roles. The dashboard (M4) gets its own policies.

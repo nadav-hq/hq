@@ -15,6 +15,7 @@ const HQ_TABLES: { table: string; where: string; order: string }[] = [
   { table: "status", where: "company_id = $1", order: "agent_id" },
   { table: "memory", where: "company_id = $1", order: "id" },
   { table: "events", where: "company_id = $1", order: "id" },
+  { table: "card_errors", where: "company_id = $1", order: "file" },
   { table: "settings", where: "key = 'stopped:' || $1", order: "key" },
 ];
 
@@ -23,7 +24,7 @@ const IDENTITY_TABLES = ["company_members", "runs", "tasks", "approvals", "memor
 export type ExportOptions = {
   /** Connection string for pg_dump (same database as `client`). */
   databaseUrl: string;
-  /** pg_dump binary; its major version must be >= the server's. */
+  /** pg_dump binary; its major version must be >= the server's (Supabase: 17). */
   pgDump?: string;
 };
 
@@ -53,9 +54,11 @@ export async function exportCompany(client: Queryable, companyId: string, opts: 
   out.push(...(await tableInserts(client, companies!, companyId)));
 
   if (format !== "internal") {
+    const pgDump = opts.pgDump ?? "pg_dump";
+    await assertPgDumpVersion(client, pgDump);
     out.push(`-- ---- schema "${companyId}" (pg_dump) ----`);
     const { stdout } = await exec(
-      opts.pgDump ?? "pg_dump",
+      pgDump,
       ["--dbname", opts.databaseUrl, "--schema", `"${companyId}"`, "--no-owner", "--no-privileges", "--quote-all-identifiers"],
       { maxBuffer: 1024 * 1024 * 1024 },
     );
@@ -87,6 +90,22 @@ async function tableInserts(
     [companyId],
   );
   return [`-- ---- hq.${t.table}: ${rows.length} row(s) ----`, ...rows.map((r) => r.stmt), ""];
+}
+
+/** Fail early with a clear message instead of pg_dump's "server version mismatch". */
+async function assertPgDumpVersion(client: Queryable, pgDump: string): Promise<void> {
+  const server = Number((await client.query<{ v: string }>("select current_setting('server_version_num') as v")).rows[0]?.v);
+  const serverMajor = Math.floor(server / 10000);
+  let out: string;
+  try {
+    out = (await exec(pgDump, ["--version"])).stdout;
+  } catch (e) {
+    throw new Error(`cannot run ${pgDump} (${(e as Error).message}); install pg_dump ${serverMajor} or set PG_DUMP`);
+  }
+  const dumpMajor = Number(/(\d+)(?:\.\d+)?/.exec(out)?.[1]);
+  if (!(dumpMajor >= serverMajor)) {
+    throw new Error(`${pgDump} is version ${dumpMajor || "?"}, server is ${serverMajor}: use pg_dump ${serverMajor}+ (set PG_DUMP)`);
+  }
 }
 
 /** pg_dump may emit psql meta-commands (\restrict in newer versions) that break inside our file. */

@@ -20,13 +20,25 @@ pnpm install
 cp .env.example .env    # fill in locally; production values live in Railway/Vercel
 
 pnpm db:migrate                       # apply db/migrations to SUPABASE_DB_URL
-pnpm db:seed                          # companies hq + hidden, owner from env
+pnpm db:seed                          # pseudo-company hq + owner, from env
 pnpm cards:validate <company-dir>     # validate company.yaml + cards (exit 1 if invalid)
-pnpm cards:sync <company-dir>         # validate, then upsert valid cards into hq.agents
-pnpm export-company <id> [out.sql]    # one .sql with the company's schema + its hq.* rows
+pnpm cards:sync <company-dir>         # validate; create the company if new; upsert agents + card_errors
+pnpm export-company <id> [out.sql]    # one .sql with the company's schema + its hq.* rows (needs pg_dump 17)
 pnpm typecheck
 pnpm test                             # DB tests need TEST_DATABASE_URL (throwaway Postgres)
 ```
+
+Requires Postgres 16+ (Supabase runs 17.11); `0001` fails with a clear error on older servers.
+
+## Source of truth
+
+- **Budgets and company settings: the DB.** `company.yaml` only sets the initial values when the loader
+  first sees a company (it then also makes the HQ owners its owners). Later edits come from the dashboard
+  or Telegram; the loader never overwrites an existing company row.
+- **Agent state: the DB.** A card's `state` is used only when the agent is first inserted.
+- **Invalid cards: `hq.card_errors`** (one row per file, `<company>/agents/<role>.md`), upserted by the loader
+  and deleted once the card is valid. `card.invalid` / `card.valid` rows in `hq.events` keep the history.
+  Health (M8) reads `card_errors`.
 
 ## Company isolation (spec §5)
 
@@ -37,4 +49,6 @@ pnpm test                             # DB tests need TEST_DATABASE_URL (throwaw
   `<company>.manager` and its own memory.
 - The engine runs agent queries inside `withCompanyRole(pool, companyId, fn)` (`SET LOCAL ROLE`).
   Agents never get raw SQL; the helper also detects role switches, rolls back and discards the connection.
+  Decision (M1 review): keep this single login + `SET LOCAL ROLE`. Revisit per-company LOGIN roles only if
+  a partner ever gets direct DB access.
 - Settings keys: `all_stopped`, `stopped:<company_id>`. Companies can read the global key and their own, never write.
