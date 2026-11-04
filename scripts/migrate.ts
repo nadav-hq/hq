@@ -2,10 +2,11 @@
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { runMigrations } from "../engine/src/db/migrate.ts";
+import { poolConfig } from "../engine/src/db/pool.ts";
 import { loadDotEnv, requireEnv } from "./_env.ts";
 
 loadDotEnv();
-const client = new pg.Client({ connectionString: requireEnv("SUPABASE_DB_URL") });
+const client = new pg.Client(poolConfig(requireEnv("SUPABASE_DB_URL")));
 await client.connect();
 try {
   const dir = fileURLToPath(new URL("../db/migrations", import.meta.url));

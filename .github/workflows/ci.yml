@@ -35,3 +35,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t hq-engine .
+      - name: Smoke test the image (cards valid, pg_dump 17, Agent SDK loads)
+        run: |
+          docker run --rm hq-engine pnpm -s cards:validate engine/test/fixtures/hidden
+          docker run --rm hq-engine sh -c '$PG_DUMP --version | grep -q " 17\."'
+          docker run --rm -w /app/engine hq-engine node -e "import('@anthropic-ai/claude-agent-sdk').then(m => { if (typeof m.query !== 'function') process.exit(1); console.log('agent sdk ok') })"
