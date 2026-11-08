@@ -3,6 +3,7 @@
 import pg from "pg";
 import { loadCompanyDir } from "../engine/src/loader/load-company.ts";
 import { syncAgents } from "../engine/src/loader/sync.ts";
+import { poolConfig } from "../engine/src/db/pool.ts";
 import { loadDotEnv, requireEnv } from "./_env.ts";
 
 loadDotEnv();
@@ -16,7 +17,7 @@ for (const i of loaded.companyIssues) console.error(`✗ ${i.path}: ${i.message}
 for (const c of loaded.invalid) console.error(`✗ ${c.file}: ${c.issues.map((i) => `${i.path} ${i.message}`).join("; ")}`);
 if (!loaded.company) process.exit(1);
 
-const client = new pg.Client({ connectionString: requireEnv("SUPABASE_DB_URL") });
+const client = new pg.Client(poolConfig(requireEnv("SUPABASE_DB_URL")));
 await client.connect();
 try {
   await client.query("begin");
