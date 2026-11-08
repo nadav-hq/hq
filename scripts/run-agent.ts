@@ -4,6 +4,7 @@
 import { ClaudeAgentDriver } from "../engine/src/runner/claude-driver.ts";
 import { runAgent } from "../engine/src/runner/run-agent.ts";
 import { flag, loadAndSync, log, openPool } from "./_cli.ts";
+import { errorInfo } from "../engine/src/log.ts";
 
 const args = process.argv.slice(2);
 const agentId = args[0];
@@ -23,7 +24,7 @@ try {
   log("run.result", out);
   code = out.status === "succeeded" || out.status === "skipped" ? 0 : 1;
 } catch (e) {
-  log("run.error", { error: (e as Error).message });
+  log("run.error", { error: errorInfo(e) });
   code = 1;
 } finally {
   await pool.end();
