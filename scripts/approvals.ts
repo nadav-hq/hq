@@ -5,6 +5,7 @@
 // Telegram's Approve / Reject buttons (M3) call the same decideApproval().
 import { decideApproval } from "../engine/src/runner/approvals.ts";
 import { log, openPool } from "./_cli.ts";
+import { errorInfo } from "../engine/src/log.ts";
 
 const [cmd, id, ...rest] = process.argv.slice(2);
 const pool = openPool();
@@ -28,7 +29,7 @@ try {
     code = 2;
   }
 } catch (e) {
-  log("approvals.error", { error: (e as Error).message });
+  log("approvals.error", { error: errorInfo(e) });
   code = 1;
 } finally {
   await pool.end();

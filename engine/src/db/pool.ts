@@ -16,10 +16,10 @@ export function createPool(url = databaseUrl(), max = 5): pg.Pool {
 
 export function poolConfig(url: string, max = 5): pg.PoolConfig {
   const ca = process.env.SUPABASE_CA_CERT?.replace(/\\n/g, "\n");
-  if (!ca) return { connectionString: url, max };
+  if (!ca) return { connectionString: url, max, connectionTimeoutMillis: 20_000 };
   const u = new URL(url);
   for (const k of ["sslmode", "sslrootcert", "uselibpqcompat"]) u.searchParams.delete(k);
-  return { connectionString: u.toString(), max, ssl: { ca, rejectUnauthorized: true } };
+  return { connectionString: u.toString(), max, connectionTimeoutMillis: 20_000, ssl: { ca, rejectUnauthorized: true } };
 }
 
 /**
